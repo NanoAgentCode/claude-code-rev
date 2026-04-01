@@ -78,6 +78,25 @@ let testOverrides: {
   deletionGrace?: number
 } | null = null
 
+function stopMdmPollTimer(): void {
+  if (!mdmPollTimer) return
+  clearInterval(mdmPollTimer)
+  mdmPollTimer = null
+}
+
+function clearPendingDeletionTimers(): void {
+  for (const timer of pendingDeletions.values()) clearTimeout(timer)
+  pendingDeletions.clear()
+}
+
+function cancelPendingDeletion(path: string, reason: string): void {
+  const pendingTimer = pendingDeletions.get(path)
+  if (!pendingTimer) return
+  clearTimeout(pendingTimer)
+  pendingDeletions.delete(path)
+  logForDebugging(`Cancelled pending deletion of ${path} — ${reason}`)
+}
+
 /**
  * Initialize file watching
  */
@@ -153,12 +172,8 @@ export async function initialize(): Promise<void> {
  */
 export function dispose(): Promise<void> {
   disposed = true
-  if (mdmPollTimer) {
-    clearInterval(mdmPollTimer)
-    mdmPollTimer = null
-  }
-  for (const timer of pendingDeletions.values()) clearTimeout(timer)
-  pendingDeletions.clear()
+  stopMdmPollTimer()
+  clearPendingDeletionTimers()
   lastMdmSnapshot = null
   clearInternalWrites()
   settingsChanged.clear()
@@ -271,14 +286,7 @@ function handleChange(path: string): void {
 
   // If a deletion was pending for this path (delete-and-recreate pattern),
   // cancel the deletion — we'll process this as a change instead.
-  const pendingTimer = pendingDeletions.get(path)
-  if (pendingTimer) {
-    clearTimeout(pendingTimer)
-    pendingDeletions.delete(path)
-    logForDebugging(
-      `Cancelled pending deletion of ${path} — file was recreated`,
-    )
-  }
+  cancelPendingDeletion(path, 'file was recreated')
 
   // Check if this was an internal write
   if (consumeInternalWrite(path, INTERNAL_WRITE_WINDOW_MS)) {
@@ -310,12 +318,7 @@ function handleAdd(path: string): void {
   if (!source) return
 
   // Cancel any pending deletion — the file is back
-  const pendingTimer = pendingDeletions.get(path)
-  if (pendingTimer) {
-    clearTimeout(pendingTimer)
-    pendingDeletions.delete(path)
-    logForDebugging(`Cancelled pending deletion of ${path} — file was re-added`)
-  }
+  cancelPendingDeletion(path, 'file was re-added')
 
   // Treat as a change (re-read settings)
   handleChange(path)
@@ -464,12 +467,8 @@ export function resetForTesting(overrides?: {
   mdmPollInterval?: number
   deletionGrace?: number
 }): Promise<void> {
-  if (mdmPollTimer) {
-    clearInterval(mdmPollTimer)
-    mdmPollTimer = null
-  }
-  for (const timer of pendingDeletions.values()) clearTimeout(timer)
-  pendingDeletions.clear()
+  stopMdmPollTimer()
+  clearPendingDeletionTimers()
   lastMdmSnapshot = null
   initialized = false
   disposed = false

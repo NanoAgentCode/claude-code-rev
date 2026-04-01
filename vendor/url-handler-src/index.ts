@@ -8,6 +8,16 @@ type UrlHandlerNapi = {
 
 let cachedModule: UrlHandlerNapi | null = null
 
+function getBundledModulePath(): string {
+  return join(
+    dirname(fileURLToPath(import.meta.url)),
+    '..',
+    'url-handler',
+    `${process.arch}-darwin`,
+    'url-handler.node',
+  )
+}
+
 function loadModule(): UrlHandlerNapi | null {
   if (cachedModule) {
     return cachedModule
@@ -25,13 +35,7 @@ function loadModule(): UrlHandlerNapi | null {
       cachedModule = require(process.env.URL_HANDLER_NODE_PATH) as UrlHandlerNapi
     } else {
       // Dev mode - load from vendor directory
-      const modulePath = join(
-        dirname(fileURLToPath(import.meta.url)),
-        '..',
-        'url-handler',
-        `${process.arch}-darwin`,
-        'url-handler.node',
-      )
+      const modulePath = getBundledModulePath()
       cachedModule = createRequire(import.meta.url)(modulePath) as UrlHandlerNapi
     }
     return cachedModule

@@ -54,7 +54,7 @@ export function checkTokenBudget(
 
   const turnTokens = globalTurnTokens
   const pct = Math.round((turnTokens / budget) * 100)
-  const deltaSinceLastCheck = globalTurnTokens - tracker.lastGlobalTurnTokens
+  const deltaSinceLastCheck = turnTokens - tracker.lastGlobalTurnTokens
 
   const isDiminishing =
     tracker.continuationCount >= 3 &&
@@ -64,7 +64,7 @@ export function checkTokenBudget(
   if (!isDiminishing && turnTokens < budget * COMPLETION_THRESHOLD) {
     tracker.continuationCount++
     tracker.lastDeltaTokens = deltaSinceLastCheck
-    tracker.lastGlobalTurnTokens = globalTurnTokens
+    tracker.lastGlobalTurnTokens = turnTokens
     return {
       action: 'continue',
       nudgeMessage: getBudgetContinuationMessage(pct, turnTokens, budget),

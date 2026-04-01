@@ -15,6 +15,10 @@ export type ClaudeForChromeContext = {
   [key: string]: unknown
 }
 
+const SHIM_STARTUP_WARNING =
+  'Claude in Chrome MCP is running with a restored compatibility shim; browser actions are not available in this workspace.'
+const SHIM_CLOSED_INFO = 'Claude in Chrome MCP shim closed.'
+
 export const BROWSER_TOOLS: Array<{ name: string; description: string }> = [
   {
     name: 'navigate',
@@ -92,9 +96,7 @@ export function createClaudeForChromeMcpServer(context: ClaudeForChromeContext) 
 
   return {
     async connect() {
-      context.logger?.warn(
-        'Claude in Chrome MCP is running with a restored compatibility shim; browser actions are not available in this workspace.',
-      )
+      context.logger?.warn(SHIM_STARTUP_WARNING)
     },
     setRequestHandler(schema: unknown, handler: unknown) {
       handlers.set(schema, handler)
@@ -102,9 +104,7 @@ export function createClaudeForChromeMcpServer(context: ClaudeForChromeContext) 
     async close() {
       closed = true
       handlers.clear()
-      context.logger?.info(
-        'Claude in Chrome MCP shim closed.',
-      )
+      context.logger?.info(SHIM_CLOSED_INFO)
     },
     get isClosed() {
       return closed

@@ -293,6 +293,9 @@ async function* queryLoop(
   // Snapshot immutable env/statsig/session state once at entry. See QueryConfig
   // for what's included and why feature() gates are intentionally excluded.
   const config = buildQueryConfig()
+  const isAgentQuerySource = querySource.startsWith('agent:')
+  const isReplMainThreadSource = querySource.startsWith('repl_main_thread')
+  const isSdkQuerySource = querySource === 'sdk'
 
   // Fired once per user turn — the prompt is invariant across loop iterations,
   // so per-iteration firing would ask sideQuery the same question N times.
@@ -373,9 +376,7 @@ async function* queryLoop(
     // Persist only for querySources that read records back on resume: agentId
     // routes to sidechain file (AgentTool resume) or session file (/resume).
     // Ephemeral runForkedAgent callers (agent_summary etc.) don't persist.
-    const persistReplacements =
-      querySource.startsWith('agent:') ||
-      querySource.startsWith('repl_main_thread')
+    const persistReplacements = isAgentQuerySource || isReplMainThreadSource
     messagesForQuery = await applyToolResultBudget(
       messagesForQuery,
       toolUseContext.contentReplacementState,
@@ -1564,8 +1565,7 @@ async function* queryLoop(
     // only; subagents never see the prompt stream.
     // eslint-disable-next-line custom-rules/require-tool-match-name -- ToolUseBlock.name has no aliases
     const sleepRan = toolUseBlocks.some(b => b.name === SLEEP_TOOL_NAME)
-    const isMainThread =
-      querySource.startsWith('repl_main_thread') || querySource === 'sdk'
+    const isMainThread = isReplMainThreadSource || isSdkQuerySource
     const currentAgentId = toolUseContext.agentId
     const queuedCommandsSnapshot = getCommandsByMaxPriority(
       sleepRan ? 'later' : 'next',
