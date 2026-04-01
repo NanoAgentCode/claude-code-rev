@@ -280,6 +280,23 @@ function settingSourceToConfigChangeSource(
   }
 }
 
+function runConfigChangeAndFanOut(
+  source: SettingSource,
+  path: string,
+  actionLabel: string,
+): void {
+  void executeConfigChangeHooks(
+    settingSourceToConfigChangeSource(source),
+    path,
+  ).then(results => {
+    if (hasBlockingResult(results)) {
+      logForDebugging(`ConfigChange hook blocked ${actionLabel} ${path}`)
+      return
+    }
+    fanOut(source)
+  })
+}
+
 function handleChange(path: string): void {
   const source = getSourceForPath(path)
   if (!source) return
@@ -297,16 +314,7 @@ function handleChange(path: string): void {
 
   // Fire ConfigChange hook first — if blocked (exit code 2 or decision: 'block'),
   // skip applying the change to the session
-  void executeConfigChangeHooks(
-    settingSourceToConfigChangeSource(source),
-    path,
-  ).then(results => {
-    if (hasBlockingResult(results)) {
-      logForDebugging(`ConfigChange hook blocked change to ${path}`)
-      return
-    }
-    fanOut(source)
-  })
+  runConfigChangeAndFanOut(source, path, 'change to')
 }
 
 /**
@@ -344,16 +352,7 @@ function handleDelete(path: string): void {
       pendingDeletions.delete(p)
 
       // Fire ConfigChange hook first — if blocked, skip applying the deletion
-      void executeConfigChangeHooks(
-        settingSourceToConfigChangeSource(src),
-        p,
-      ).then(results => {
-        if (hasBlockingResult(results)) {
-          logForDebugging(`ConfigChange hook blocked deletion of ${p}`)
-          return
-        }
-        fanOut(src)
-      })
+      runConfigChangeAndFanOut(src, p, 'deletion of')
     },
     testOverrides?.deletionGrace ?? DELETION_GRACE_MS,
     path,

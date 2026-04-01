@@ -367,6 +367,19 @@ async function* queryLoop(
       ...toolUseContext,
       queryTracking,
     }
+    const shouldCleanupChicagoMcp =
+      feature('CHICAGO_MCP') && !toolUseContext.agentId
+    const cleanupChicagoMcpIfNeeded = async (): Promise<void> => {
+      if (!shouldCleanupChicagoMcp) return
+      try {
+        const { cleanupComputerUseAfterTurn } = await import(
+          './utils/computerUse/cleanup.js'
+        )
+        await cleanupComputerUseAfterTurn(toolUseContext)
+      } catch {
+        // Failures are silent — this is dogfooding cleanup, not critical path
+      }
+    }
 
     let messagesForQuery = [...getMessagesAfterCompactBoundary(messages)]
 
@@ -1034,16 +1047,7 @@ async function* queryLoop(
       // chicago MCP: auto-unhide + lock release on interrupt. Same cleanup
       // as the natural turn-end path in stopHooks.ts. Main thread only —
       // see stopHooks.ts for the subagent-releasing-main's-lock rationale.
-      if (feature('CHICAGO_MCP') && !toolUseContext.agentId) {
-        try {
-          const { cleanupComputerUseAfterTurn } = await import(
-            './utils/computerUse/cleanup.js'
-          )
-          await cleanupComputerUseAfterTurn(toolUseContext)
-        } catch {
-          // Failures are silent — this is dogfooding cleanup, not critical path
-        }
-      }
+      await cleanupChicagoMcpIfNeeded()
 
       // Skip the interruption message for submit-interrupts — the queued
       // user message that follows provides sufficient context.
@@ -1490,16 +1494,7 @@ async function* queryLoop(
       // chicago MCP: auto-unhide + lock release when aborted mid-tool-call.
       // This is the most likely Ctrl+C path for CU (e.g. slow screenshot).
       // Main thread only — see stopHooks.ts for the subagent rationale.
-      if (feature('CHICAGO_MCP') && !toolUseContext.agentId) {
-        try {
-          const { cleanupComputerUseAfterTurn } = await import(
-            './utils/computerUse/cleanup.js'
-          )
-          await cleanupComputerUseAfterTurn(toolUseContext)
-        } catch {
-          // Failures are silent — this is dogfooding cleanup, not critical path
-        }
-      }
+      await cleanupChicagoMcpIfNeeded()
       // Skip the interruption message for submit-interrupts — the queued
       // user message that follows provides sufficient context.
       if (toolUseContext.abortController.signal.reason !== 'interrupt') {
