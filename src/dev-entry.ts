@@ -10,6 +10,15 @@ type MissingImport = {
   specifier: string
 }
 
+const SOURCE_EXTENSIONS = new Set([
+  '.ts',
+  '.tsx',
+  '.js',
+  '.jsx',
+  '.mjs',
+  '.cjs',
+])
+
 function scanFiles(dir: string, out: string[]): void {
   if (!existsSync(dir)) return
   for (const entry of readdirSync(dir, { withFileTypes: true })) {
@@ -18,7 +27,7 @@ function scanFiles(dir: string, out: string[]): void {
       scanFiles(fullPath, out)
       continue
     }
-    if (['.ts', '.tsx', '.js', '.jsx', '.mjs', '.cjs'].includes(extname(entry.name))) {
+    if (SOURCE_EXTENSIONS.has(extname(entry.name))) {
       out.push(fullPath)
     }
   }
@@ -51,7 +60,12 @@ function collectMissingRelativeImports(): MissingImport[] {
     /(?:import|export)\s+[\s\S]*?from\s+['"](\.\.?\/[^'"]+)['"]|require\(\s*['"](\.\.?\/[^'"]+)['"]\s*\)/g
 
   for (const file of files) {
-    const text = readFileSync(file, 'utf8')
+    let text: string
+    try {
+      text = readFileSync(file, 'utf8')
+    } catch {
+      continue
+    }
     for (const match of text.matchAll(pattern)) {
       const specifier = match[1] ?? match[2]
       if (!specifier) continue
