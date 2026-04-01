@@ -18,7 +18,8 @@
     "dev": "bun run ./src/bootstrap-entry.ts",
     "start": "bun run ./src/bootstrap-entry.ts",
     "version": "bun run ./src/bootstrap-entry.ts --version",
-    "dev:restore-check": "bun run ./src/dev-entry.ts"
+    "dev:restore-check": "bun run ./src/dev-entry.ts",
+    "typecheck": "bunx tsc --noEmit --ignoreDeprecations 6.0"
   },
   "dependencies": {
     "@alcalzone/ansi-tokenize": "*",

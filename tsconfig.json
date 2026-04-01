@@ -26,5 +26,9 @@
     "src/**/*",
     "vendor/**/*",
     "shims/**/*"
+  ],
+  "exclude": [
+    "node_modules",
+    ".git"
   ]
 }
