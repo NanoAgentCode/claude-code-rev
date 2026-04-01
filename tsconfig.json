@@ -1,5 +1,6 @@
 {
   "compilerOptions": {
+    "noEmit": true,
     "target": "ESNext",
     "module": "ESNext",
     "moduleResolution": "bundler",
@@ -18,7 +19,7 @@
       ]
     },
     "types": [
-      "bun"
+      "bun-types"
     ]
   },
   "include": [
