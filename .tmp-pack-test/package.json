@@ -1,0 +1,8 @@
+{
+  "name": "pack-test",
+  "version": "1.0.0",
+  "private": true,
+  "dependencies": {
+    "@anthropic-ai/claude-code": "file:../anthropic-ai-claude-code-999.0.0-restored.tgz"
+  }
+}

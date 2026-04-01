@@ -1,7 +1,7 @@
 {
   "name": "@anthropic-ai/claude-code",
   "version": "999.0.0-restored",
-  "private": true,
+  "private": false,
   "description": "Restored Claude Code source tree reconstructed from source maps.",
   "license": "SEE LICENSE IN LICENSE.md",
   "type": "module",
@@ -22,6 +22,18 @@
     "typecheck": "bunx tsc --noEmit --ignoreDeprecations 6.0",
     "verify:baseline": "bun run version && bun run typecheck"
   },
+  "bin": {
+    "claude-code-rev": "./bin/claude-code-rev.cjs"
+  },
+  "files": [
+    "bin",
+    "src",
+    "shims",
+    "vendor",
+    "README.md",
+    "CLAUDE.md",
+    "AGENTS.md"
+  ],
   "dependencies": {
     "@alcalzone/ansi-tokenize": "*",
     "@ant/claude-for-chrome-mcp": "file:./shims/ant-claude-for-chrome-mcp",
