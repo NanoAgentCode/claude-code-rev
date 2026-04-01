@@ -171,64 +171,38 @@ export const subscribe = skillsChanged.subscribe
 async function getWatchablePaths(): Promise<string[]> {
   const fs = getFsImplementation()
   const paths: string[] = []
+  const pushIfExists = async (path: string | undefined): Promise<void> => {
+    if (!path) return
+    try {
+      await fs.stat(path)
+      paths.push(path)
+    } catch {
+      // Path doesn't exist, skip it
+    }
+  }
 
   // User skills directory (~/.claude/skills)
-  const userSkillsPath = getSkillsPath('userSettings', 'skills')
-  if (userSkillsPath) {
-    try {
-      await fs.stat(userSkillsPath)
-      paths.push(userSkillsPath)
-    } catch {
-      // Path doesn't exist, skip it
-    }
-  }
+  await pushIfExists(getSkillsPath('userSettings', 'skills'))
 
   // User commands directory (~/.claude/commands)
-  const userCommandsPath = getSkillsPath('userSettings', 'commands')
-  if (userCommandsPath) {
-    try {
-      await fs.stat(userCommandsPath)
-      paths.push(userCommandsPath)
-    } catch {
-      // Path doesn't exist, skip it
-    }
-  }
+  await pushIfExists(getSkillsPath('userSettings', 'commands'))
 
   // Project skills directory (.claude/skills)
   const projectSkillsPath = getSkillsPath('projectSettings', 'skills')
-  if (projectSkillsPath) {
-    try {
-      // For project settings, resolve to absolute path
-      const absolutePath = platformPath.resolve(projectSkillsPath)
-      await fs.stat(absolutePath)
-      paths.push(absolutePath)
-    } catch {
-      // Path doesn't exist, skip it
-    }
-  }
+  await pushIfExists(
+    projectSkillsPath ? platformPath.resolve(projectSkillsPath) : undefined,
+  )
 
   // Project commands directory (.claude/commands)
   const projectCommandsPath = getSkillsPath('projectSettings', 'commands')
-  if (projectCommandsPath) {
-    try {
-      // For project settings, resolve to absolute path
-      const absolutePath = platformPath.resolve(projectCommandsPath)
-      await fs.stat(absolutePath)
-      paths.push(absolutePath)
-    } catch {
-      // Path doesn't exist, skip it
-    }
-  }
+  await pushIfExists(
+    projectCommandsPath ? platformPath.resolve(projectCommandsPath) : undefined,
+  )
 
   // Additional directories (--add-dir) skills
   for (const dir of getAdditionalDirectoriesForClaudeMd()) {
     const additionalSkillsPath = platformPath.join(dir, '.claude', 'skills')
-    try {
-      await fs.stat(additionalSkillsPath)
-      paths.push(additionalSkillsPath)
-    } catch {
-      // Path doesn't exist, skip it
-    }
+    await pushIfExists(additionalSkillsPath)
   }
 
   return paths

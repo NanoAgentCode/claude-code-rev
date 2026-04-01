@@ -52,6 +52,7 @@ import type { QuerySource } from '../constants/querySource.js'
 import { executeAutoDream } from '../services/autoDream/autoDream.js'
 import { executePromptSuggestion } from '../services/PromptSuggestion/promptSuggestion.js'
 import { isBareMode, isEnvDefinedFalsy } from '../utils/envUtils.js'
+import { getQuerySourceFlags } from './sourceFlags.js'
 import {
   createCacheSafeParams,
   saveCacheSafeParams,
@@ -80,6 +81,8 @@ export async function* handleStopHooks(
   StopHookResult
 > {
   const hookStartTime = Date.now()
+  const { isMainThreadSource, isReplMainThreadSource } =
+    getQuerySourceFlags(querySource)
 
   const stopHookContext: REPLHookContext = {
     messages: [...messagesForQuery, ...assistantMessages],
@@ -93,7 +96,7 @@ export async function* handleStopHooks(
   // Outside the prompt-suggestion gate: the REPL /btw command and the
   // side_question SDK control_request both read this snapshot, and neither
   // depends on prompt suggestions being enabled.
-  if (querySource === 'repl_main_thread' || querySource === 'sdk') {
+  if (isMainThreadSource) {
     saveCacheSafeParams(createCacheSafeParams(stopHookContext))
   }
 
@@ -108,7 +111,7 @@ export async function* handleStopHooks(
   if (
     feature('TEMPLATES') &&
     process.env.CLAUDE_JOB_DIR &&
-    querySource.startsWith('repl_main_thread') &&
+    isReplMainThreadSource &&
     !toolUseContext.agentId
   ) {
     // Full turn history — assistantMessages resets each queryLoop iteration,

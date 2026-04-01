@@ -101,6 +101,7 @@ import { recordContentReplacement } from './utils/sessionStorage.js'
 import { handleStopHooks } from './query/stopHooks.js'
 import { buildQueryConfig } from './query/config.js'
 import { productionDeps, type QueryDeps } from './query/deps.js'
+import { getQuerySourceFlags } from './query/sourceFlags.js'
 import type { Terminal, Continue } from './query/transitions.js'
 import { feature } from 'bun:bundle'
 import {
@@ -293,9 +294,11 @@ async function* queryLoop(
   // Snapshot immutable env/statsig/session state once at entry. See QueryConfig
   // for what's included and why feature() gates are intentionally excluded.
   const config = buildQueryConfig()
-  const isAgentQuerySource = querySource.startsWith('agent:')
-  const isReplMainThreadSource = querySource.startsWith('repl_main_thread')
-  const isSdkQuerySource = querySource === 'sdk'
+  const {
+    isAgentQuerySource,
+    isReplMainThreadSource,
+    isMainThreadSource,
+  } = getQuerySourceFlags(querySource)
 
   // Fired once per user turn — the prompt is invariant across loop iterations,
   // so per-iteration firing would ask sideQuery the same question N times.
@@ -1565,7 +1568,7 @@ async function* queryLoop(
     // only; subagents never see the prompt stream.
     // eslint-disable-next-line custom-rules/require-tool-match-name -- ToolUseBlock.name has no aliases
     const sleepRan = toolUseBlocks.some(b => b.name === SLEEP_TOOL_NAME)
-    const isMainThread = isReplMainThreadSource || isSdkQuerySource
+    const isMainThread = isMainThreadSource
     const currentAgentId = toolUseContext.agentId
     const queuedCommandsSnapshot = getCommandsByMaxPriority(
       sleepRan ? 'later' : 'next',
