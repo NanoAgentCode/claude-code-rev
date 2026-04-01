@@ -367,8 +367,9 @@ async function* queryLoop(
       ...toolUseContext,
       queryTracking,
     }
-    const shouldCleanupChicagoMcp =
-      feature('CHICAGO_MCP') && !toolUseContext.agentId
+    const shouldCleanupChicagoMcp = feature('CHICAGO_MCP')
+      ? !toolUseContext.agentId
+      : false
     const cleanupChicagoMcpIfNeeded = async (): Promise<void> => {
       if (!shouldCleanupChicagoMcp) return
       try {
