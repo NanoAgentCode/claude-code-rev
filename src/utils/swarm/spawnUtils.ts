@@ -99,8 +99,11 @@ const TEAMMATE_ENV_VARS = [
   'CLAUDE_CODE_USE_BEDROCK',
   'CLAUDE_CODE_USE_VERTEX',
   'CLAUDE_CODE_USE_FOUNDRY',
+  'CLAUDE_CODE_USE_OLLAMA',
   // Custom API endpoint
   'ANTHROPIC_BASE_URL',
+  'OLLAMA_BASE_URL',
+  'OLLAMA_API_KEY',
   // Config directory override
   'CLAUDE_CONFIG_DIR',
   // CCR marker — teammates need this for CCR-aware code paths. Auth finds

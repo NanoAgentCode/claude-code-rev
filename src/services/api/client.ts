@@ -128,6 +128,34 @@ export async function getAnthropicClient({
     defaultHeaders['x-anthropic-additional-protection'] = 'true'
   }
 
+  // Experimental compatibility path for local Ollama setups.
+  // This still uses Anthropic wire format, so it requires an Anthropic-compatible
+  // endpoint in front of Ollama (for example a local translation gateway).
+  if (isEnvTruthy(process.env.CLAUDE_CODE_USE_OLLAMA)) {
+    const resolvedFetch = buildFetch(fetchOverride, source)
+    const ollamaBaseUrl = getOllamaBaseUrl()
+    const ollamaApiKey = process.env.OLLAMA_API_KEY || 'ollama'
+    const clientConfig: ConstructorParameters<typeof Anthropic>[0] = {
+      apiKey: ollamaApiKey,
+      baseURL: ollamaBaseUrl,
+      defaultHeaders,
+      maxRetries,
+      timeout: parseInt(process.env.API_TIMEOUT_MS || String(600 * 1000), 10),
+      dangerouslyAllowBrowser: true,
+      fetchOptions: getProxyFetchOptions({
+        forAnthropicAPI: false,
+      }) as ClientOptions['fetchOptions'],
+      ...(resolvedFetch && {
+        fetch: resolvedFetch,
+      }),
+      ...(isDebugToStdErr() && { logger: createStderrLogger() }),
+    }
+    logForDebugging(
+      `[API:request] CLAUDE_CODE_USE_OLLAMA enabled, using base URL: ${ollamaBaseUrl}`,
+    )
+    return new Anthropic(clientConfig)
+  }
+
   logForDebugging('[API:auth] OAuth token check starting')
   await checkAndRefreshOAuthTokenIfNeeded()
   logForDebugging('[API:auth] OAuth token check complete')
@@ -313,6 +341,15 @@ export async function getAnthropicClient({
   }
 
   return new Anthropic(clientConfig)
+}
+
+function getOllamaBaseUrl(): string {
+  const raw =
+    process.env.OLLAMA_BASE_URL ||
+    process.env.ANTHROPIC_BASE_URL ||
+    'http://127.0.0.1:11434'
+  const trimmed = raw.replace(/\/+$/, '')
+  return trimmed.endsWith('/v1') ? trimmed : `${trimmed}/v1`
 }
 
 async function configureApiKeyHeaders(
