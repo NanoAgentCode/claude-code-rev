@@ -128,6 +128,32 @@ export async function getAnthropicClient({
     defaultHeaders['x-anthropic-additional-protection'] = 'true'
   }
 
+  // Experimental: vLLM serving Anthropic-compatible `/v1/messages` (upstream vLLM OpenAI entrypoint).
+  if (isEnvTruthy(process.env.CLAUDE_CODE_USE_VLLM)) {
+    const resolvedFetch = buildFetch(fetchOverride, source)
+    const vllmBaseUrl = getVllmBaseUrl()
+    const vllmApiKey = process.env.VLLM_API_KEY || 'vllm'
+    const clientConfig: ConstructorParameters<typeof Anthropic>[0] = {
+      apiKey: vllmApiKey,
+      baseURL: vllmBaseUrl,
+      defaultHeaders,
+      maxRetries,
+      timeout: parseInt(process.env.API_TIMEOUT_MS || String(600 * 1000), 10),
+      dangerouslyAllowBrowser: true,
+      fetchOptions: getProxyFetchOptions({
+        forAnthropicAPI: false,
+      }) as ClientOptions['fetchOptions'],
+      ...(resolvedFetch && {
+        fetch: resolvedFetch,
+      }),
+      ...(isDebugToStdErr() && { logger: createStderrLogger() }),
+    }
+    logForDebugging(
+      `[API:request] CLAUDE_CODE_USE_VLLM enabled, using base URL: ${vllmBaseUrl}`,
+    )
+    return new Anthropic(clientConfig)
+  }
+
   // Experimental compatibility path for local Ollama setups.
   // This still uses Anthropic wire format, so it requires an Anthropic-compatible
   // endpoint in front of Ollama (for example a local translation gateway).
@@ -343,13 +369,25 @@ export async function getAnthropicClient({
   return new Anthropic(clientConfig)
 }
 
+function normalizeAnthropicCompatBaseUrl(raw: string): string {
+  const trimmed = raw.replace(/\/+$/, '')
+  return trimmed.endsWith('/v1') ? trimmed : `${trimmed}/v1`
+}
+
+function getVllmBaseUrl(): string {
+  const raw =
+    process.env.VLLM_BASE_URL ||
+    process.env.ANTHROPIC_BASE_URL ||
+    'http://127.0.0.1:8000'
+  return normalizeAnthropicCompatBaseUrl(raw)
+}
+
 function getOllamaBaseUrl(): string {
   const raw =
     process.env.OLLAMA_BASE_URL ||
     process.env.ANTHROPIC_BASE_URL ||
     'http://127.0.0.1:11434'
-  const trimmed = raw.replace(/\/+$/, '')
-  return trimmed.endsWith('/v1') ? trimmed : `${trimmed}/v1`
+  return normalizeAnthropicCompatBaseUrl(raw)
 }
 
 async function configureApiKeyHeaders(

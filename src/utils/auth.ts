@@ -116,6 +116,7 @@ export function isAnthropicAuthEnabled(): boolean {
     isEnvTruthy(process.env.CLAUDE_CODE_USE_BEDROCK) ||
     isEnvTruthy(process.env.CLAUDE_CODE_USE_VERTEX) ||
     isEnvTruthy(process.env.CLAUDE_CODE_USE_FOUNDRY) ||
+    isEnvTruthy(process.env.CLAUDE_CODE_USE_VLLM) ||
     isEnvTruthy(process.env.CLAUDE_CODE_USE_OLLAMA)
 
   // Check if user has configured an external API key source
@@ -1596,6 +1597,7 @@ export function is1PApiCustomer(): boolean {
     isEnvTruthy(process.env.CLAUDE_CODE_USE_BEDROCK) ||
     isEnvTruthy(process.env.CLAUDE_CODE_USE_VERTEX) ||
     isEnvTruthy(process.env.CLAUDE_CODE_USE_FOUNDRY) ||
+    isEnvTruthy(process.env.CLAUDE_CODE_USE_VLLM) ||
     isEnvTruthy(process.env.CLAUDE_CODE_USE_OLLAMA)
   ) {
     return false
@@ -1736,6 +1738,7 @@ export function isUsing3PServices(): boolean {
     isEnvTruthy(process.env.CLAUDE_CODE_USE_BEDROCK) ||
     isEnvTruthy(process.env.CLAUDE_CODE_USE_VERTEX) ||
     isEnvTruthy(process.env.CLAUDE_CODE_USE_FOUNDRY) ||
+    isEnvTruthy(process.env.CLAUDE_CODE_USE_VLLM) ||
     isEnvTruthy(process.env.CLAUDE_CODE_USE_OLLAMA)
   )
 }

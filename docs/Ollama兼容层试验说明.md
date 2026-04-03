@@ -1,5 +1,7 @@
 # Ollama 兼容层试验说明（实验性）
 
+本地 **vLLM**（Anthropic 协议）见 [vLLM兼容层试验说明.md](./vLLM兼容层试验说明.md)。
+
 ## 1. 说明
 
 本项目已新增一条 **实验性 Ollama 兼容路径**，用于快速尝试接入本地 Ollama。
